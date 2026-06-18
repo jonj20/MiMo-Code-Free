@@ -406,21 +406,13 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
     llmgateway: () =>
       Effect.succeed({
         autoload: false,
-        options: {
-          headers: {
-            "HTTP-Referer": "https://mimo.xiaomi.com/coder/",
-            "X-Title": "mimocode",
-            "X-Source": "mimocode",
-          },
-        },
+        options: {},
       }),
     openrouter: () =>
       Effect.succeed({
         autoload: false,
         options: {
           headers: {
-            "HTTP-Referer": "https://mimo.xiaomi.com/coder/",
-            "X-Title": "mimocode",
             "X-OpenRouter-Categories": "programming,programming-app,cli-agent",
           },
         },
@@ -428,22 +420,12 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
     nvidia: () =>
       Effect.succeed({
         autoload: false,
-        options: {
-          headers: {
-            "HTTP-Referer": "https://mimo.xiaomi.com/coder/",
-            "X-Title": "mimocode",
-          },
-        },
+        options: {},
       }),
     vercel: () =>
       Effect.succeed({
         autoload: false,
-        options: {
-          headers: {
-            "http-referer": "https://mimo.xiaomi.com/coder/",
-            "x-title": "mimocode",
-          },
-        },
+        options: {},
       }),
     "google-vertex": Effect.fnUntraced(function* (provider: Info) {
       const env = yield* dep.env()
@@ -536,12 +518,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
     zenmux: () =>
       Effect.succeed({
         autoload: false,
-        options: {
-          headers: {
-            "HTTP-Referer": "https://mimo.xiaomi.com/coder/",
-            "X-Title": "mimocode",
-          },
-        },
+        options: {},
       }),
     gitlab: Effect.fnUntraced(function* (input: Info) {
       const {
@@ -821,12 +798,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
     kilo: () =>
       Effect.succeed({
         autoload: false,
-        options: {
-          headers: {
-            "HTTP-Referer": "https://mimo.xiaomi.com/coder/",
-            "X-Title": "mimocode",
-          },
-        },
+        options: {},
       }),
   }
 }
@@ -1713,11 +1685,6 @@ const layer: Layer.Layer<
         if (!provider) continue
         if (!provider.models[entry.modelID]) continue
         return { providerID: entry.providerID, modelID: entry.modelID }
-      }
-
-      const mimo = s.providers[ProviderID.make("mimo")]
-      if (mimo?.models[ModelID.make("mimo-auto")]) {
-        return { providerID: mimo.id, modelID: ModelID.make("mimo-auto") }
       }
 
       const provider = Object.values(s.providers).find((p) => !cfg.provider || Object.keys(cfg.provider).includes(p.id))

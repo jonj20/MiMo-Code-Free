@@ -19,12 +19,9 @@ function number(key: string) {
 
 const MIMOCODE_EXPERIMENTAL = truthy("MIMOCODE_EXPERIMENTAL")
 
-// Defaults to false. When enabled, mimocode runs in pure-mimo mode:
-//   — does NOT inherit Claude Code's settings (CLAUDE.md, ~/.claude/skills, etc.)
-//   — does NOT pick up provider API keys from environment variables
-//   — falls back to the mimo-auto model as the default
-// Set MIMOCODE_MIMO_ONLY=true to disable .claude inheritance and env-based
-// provider auto-detection.
+// Deprecated — kept for backwards compatibility but no longer restricts
+// provider env detection or default model selection. Setting this to true
+// only disables Claude Code settings inheritance.
 const MIMOCODE_MIMO_ONLY = truthy("MIMOCODE_MIMO_ONLY")
 const MIMOCODE_DISABLE_CLAUDE_CODE_ENV = truthy("MIMOCODE_DISABLE_CLAUDE_CODE")
 const MIMOCODE_DISABLE_CLAUDE_CODE = MIMOCODE_MIMO_ONLY || MIMOCODE_DISABLE_CLAUDE_CODE_ENV
@@ -70,7 +67,7 @@ export const Flag = {
   MIMOCODE_MAX_PROMPT_IMAGES: number("MIMOCODE_MAX_PROMPT_IMAGES"),
   MIMOCODE_MAX_PROMPT_IMAGE_SIZE: number("MIMOCODE_MAX_PROMPT_IMAGE_SIZE"),
   MIMOCODE_MIMO_ONLY,
-  MIMOCODE_DISABLE_PROVIDER_ENV: MIMOCODE_MIMO_ONLY || truthy("MIMOCODE_DISABLE_PROVIDER_ENV"),
+  MIMOCODE_DISABLE_PROVIDER_ENV: truthy("MIMOCODE_DISABLE_PROVIDER_ENV"),
   MIMOCODE_DISABLE_CLAUDE_CODE,
   get MIMOCODE_DISABLE_CLAUDE_CODE_MCP() {
     // MCP compatibility stays on in mimo-only mode so users can reuse Claude Code
