@@ -3,7 +3,11 @@
 <p align="center"><strong>MiMo Code: Where Models and Agents Co-Evolve</strong></p>
 
 <p align="center">
+<<<<<<< HEAD
   <a href="https://mimo.xiaomi.com/coder">Website</a> | <a href="https://mimo.xiaomi.com/en/blog/mimo-code-long-horizon">Blog</a> | <a href="https://github.com/XiaomiMiMo/MiMo-Code">GitHub</a>
+=======
+  <a href="https://mimo.xiaomi.com/en/mimocode">Website</a> | <a href="https://mimo.xiaomi.com/en/blog/mimo-code-long-horizon">Blog</a> | <a href="https://github.com/XiaomiMiMo/MiMo-Code">GitHub</a>
+>>>>>>> ab53d06 (Update to latest release)
 </p>
 
 ---
