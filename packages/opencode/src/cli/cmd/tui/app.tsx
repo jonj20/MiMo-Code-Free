@@ -417,7 +417,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
   const connected = useConnected()
 
   // Seed never-ask from the launch flag once connected (the server starts with
-  // it off; this mirrors --never-ask to the question service).
+  // it off; this mirrors --never-ask-questions to the question service).
   let seededNeverAsk = false
   createEffect(() => {
     if (seededNeverAsk || !args.neverAsk || !connected()) return
@@ -541,7 +541,8 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
       value: "question.never_ask.toggle",
       category: "agent",
       slash: {
-        name: "never-ask",
+        name: "never-ask-questions",
+        aliases: ["never-ask"],
       },
       onSelect: () => {
         const next = !local.neverAsk.current()
@@ -829,7 +830,6 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
       onSelect: () => {
         process.once("SIGCONT", () => {
           renderer.resume()
-          renderer.currentRenderBuffer.clear()
         })
 
         renderer.suspend()
@@ -965,8 +965,8 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
 
     const choice = await DialogConfirm.show(
       dialog,
-      t("tui.toast.update_available.title"),
-      t("tui.toast.update_available.confirm", { version }),
+      `Update Available`,
+      `A new release v${version} is available. Would you like to update now?`,
       "skip",
     )
 
@@ -979,7 +979,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
 
     toast.show({
       variant: "info",
-      message: t("tui.toast.update_available.updating", { version }),
+      message: `Updating to v${version}...`,
       duration: 30000,
     })
 
@@ -988,8 +988,8 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
     if (result.error || !result.data?.success) {
       toast.show({
         variant: "error",
-        title: t("tui.toast.update_available.title"),
-        message: t("tui.toast.update_available.failed"),
+        title: "Update Failed",
+        message: "Update failed",
         duration: 10000,
       })
       return
@@ -997,20 +997,11 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
 
     await DialogAlert.show(
       dialog,
-      t("tui.toast.update_available.title"),
-      t("tui.toast.update_available.success", { version: result.data.version }),
+      "Update Complete",
+      `Successfully updated to MiMoCode v${result.data.version}. Please restart the application.`,
     )
 
     void exit()
-  })
-
-  event.on("installation.updated", (evt) => {
-    toast.show({
-      variant: "success",
-      title: t("tui.toast.updated.title"),
-      message: t("tui.toast.updated.message", { version: evt.properties.version }),
-      duration: 10000,
-    })
   })
 
   // Handle interactive bash commands: suspend TUI, let user interact directly in terminal
@@ -1051,7 +1042,6 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
       } finally {
         renderer.currentRenderBuffer.clear()
         renderer.resume()
-        renderer.currentRenderBuffer.clear()
         renderer.requestRender()
       }
 

@@ -6,17 +6,15 @@ import { UI } from "../ui"
 import { ModelsDev } from "../../provider"
 import { map, pipe, sortBy, values } from "remeda"
 import path from "path"
-import fs from "fs"
-import { pathToFileURL } from "url"
 import os from "os"
 import { Config } from "../../config"
 import { Global } from "../../global"
 import { Plugin } from "../../plugin"
+import { MimoFree } from "../../plugin/mimo-free"
 import { t } from "../i18n"
 import { Instance } from "../../project/instance"
 import type { Hooks } from "@mimo-ai/plugin"
 import { Process } from "../../util"
-import { PROVIDER_PRIORITY } from "../../util/provider-priority"
 import { text } from "node:stream/consumers"
 import { Effect } from "effect"
 import * as readline from "readline"
@@ -217,17 +215,27 @@ export function resolvePluginProviders(input: {
   return result
 }
 
-// Dynamically load the optional free-login entry (src/ext/free-login.ts), if
-// present. Returns its handler when available, otherwise undefined. Computed
-// path so builds without the extension still resolve cleanly.
-async function loadFreeLogin(): Promise<(() => Promise<void>) | undefined> {
-  const file = path.join(import.meta.dir, "..", "..", "ext", "free-login.ts")
-  if (!fs.existsSync(file)) return undefined
+async function mimoFreeLogin() {
+  const spinner = prompts.spinner()
+  spinner.start(t("cli.providers.mimo_free.verifying"))
   try {
-    const mod = await import(/* @vite-ignore */ pathToFileURL(file).href)
-    return typeof mod.mimoFreeLogin === "function" ? mod.mimoFreeLogin : undefined
-  } catch {
-    return undefined
+    const { fingerprint, exp } = await MimoFree.verify()
+    spinner.stop(t("cli.providers.mimo_free.ready"))
+    const expDate = new Date(exp).toISOString()
+    prompts.log.success(t("cli.providers.mimo_free.default_set"))
+    prompts.log.info(
+      [
+        `Endpoint:    ${MimoFree.chatBaseUrl}/chat`,
+        `Fingerprint: ${fingerprint.slice(0, 12)}…${fingerprint.slice(-4)}`,
+        `Token exp:   ${expDate}`,
+      ].join("\n"),
+    )
+    prompts.log.info(t("cli.providers.mimo_free.usage_hint"))
+    prompts.outro("Done")
+  } catch (err) {
+    spinner.stop(t("cli.providers.mimo_free.failed"), 1)
+    prompts.log.error(err instanceof Error ? err.message : String(err))
+    prompts.outro("Done")
   }
 }
 
@@ -468,7 +476,15 @@ export const ProvidersLoginCommand = cmd({
           }),
         )
 
-        const priority = PROVIDER_PRIORITY
+        const priority: Record<string, number> = {
+          opencode: 0,
+          openai: 1,
+          "github-copilot": 2,
+          google: 3,
+          anthropic: 4,
+          openrouter: 5,
+          vercel: 6,
+        }
         const pluginProviders = resolvePluginProviders({
           hooks,
           existingProviders: providers,
@@ -488,6 +504,7 @@ export const ProvidersLoginCommand = cmd({
               label: x.name,
               value: x.id,
               hint: {
+                opencode: "recommended",
                 openai: "ChatGPT Plus/Pro or API key",
               }[x.id],
             })),
@@ -499,13 +516,12 @@ export const ProvidersLoginCommand = cmd({
           })),
         ]
 
-        const freeLogin = await loadFreeLogin()
         let provider: string
         if (args.provider === "xiaomi") {
           await mimoLogin()
           return
-        } else if ((args.provider === "mimo" || args.provider === "mimo-free") && freeLogin) {
-          await freeLogin()
+        } else if (args.provider === "mimo" || args.provider === "mimo-free") {
+          await mimoFreeLogin()
           return
         } else if (args.provider) {
           const input = args.provider
@@ -522,9 +538,7 @@ export const ProvidersLoginCommand = cmd({
             message: t("cli.providers.select"),
             options: [
               { label: "MiMo", value: "xiaomi", hint: t("cli.providers.mimo.recommended_hint") },
-              ...(freeLogin
-                ? [{ label: "MiMo Auto (free)", value: "mimo-free", hint: t("cli.providers.mimo_free.hint") }]
-                : []),
+              { label: "MiMo Auto (free)", value: "mimo-free", hint: t("cli.providers.mimo_free.hint") },
               { label: t("cli.providers.other"), value: "__other__" },
             ],
           })
@@ -535,8 +549,8 @@ export const ProvidersLoginCommand = cmd({
             return
           }
 
-          if (choice === "mimo-free" && freeLogin) {
-            await freeLogin()
+          if (choice === "mimo-free") {
+            await mimoFreeLogin()
             return
           }
 

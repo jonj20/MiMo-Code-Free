@@ -53,9 +53,7 @@ const singleFlag = process.argv.includes("--single")
 const baselineFlag = process.argv.includes("--baseline")
 const skipInstall = process.argv.includes("--skip-install")
 const plugin = createSolidTransformPlugin()
-// const skipEmbedWebUi = process.argv.includes("--skip-embed-web-ui")
-// Web UI temporarily disabled
-const skipEmbedWebUi = true
+const skipEmbedWebUi = process.argv.includes("--skip-embed-web-ui")
 
 const createEmbeddedWebUIBundle = async () => {
   console.log(`Building Web UI to embed in the binary`)
@@ -168,28 +166,6 @@ const targets = singleFlag
 
 await $`rm -rf dist`
 
-const extDir = path.join(dir, "src", "ext")
-if (!fs.existsSync(extDir)) {
-  const overlaySrc = path.resolve(dir, "../../mimoapi/packages/opencode/src/ext")
-  if (fs.existsSync(overlaySrc)) {
-    console.log(`Staging overlay entrypoints from ${overlaySrc}`)
-    fs.cpSync(overlaySrc, extDir, { recursive: true })
-    process.on("exit", () => {
-      try {
-        fs.rmSync(extDir, { recursive: true, force: true })
-      } catch {}
-    })
-  }
-}
-const extEntrypoints = fs.existsSync(extDir)
-  ? fs.readdirSync(extDir)
-      .filter((f) => f.endsWith(".ts") && !f.endsWith(".d.ts"))
-      .map((f) => `./src/ext/${f}`)
-  : []
-if (extEntrypoints.length) {
-  console.log(`Including overlay entrypoints: ${extEntrypoints.join(", ")}`)
-}
-
 const binaries: Record<string, string> = {}
 if (!skipInstall) {
   await $`bun install --os="*" --cpu="*" @opentui/core@${pkg.dependencies["@opentui/core"]}`
@@ -237,13 +213,13 @@ for (const item of targets) {
       windows: {},
     },
     files: embeddedFileMap ? { "opencode-web-ui.gen.ts": embeddedFileMap } : {},
-    entrypoints: ["./src/index.ts", parserWorker, workerPath, ...(embeddedFileMap ? ["opencode-web-ui.gen.ts"] : []), ...extEntrypoints],
+    entrypoints: ["./src/index.ts", parserWorker, workerPath, ...(embeddedFileMap ? ["opencode-web-ui.gen.ts"] : [])],
     define: {
-      MIMOCODE_VERSION: `'${Script.version}'`,
+      OPENCODE_VERSION: `'${Script.version}'`,
       OPENCODE_MIGRATIONS: JSON.stringify(migrations),
       OTUI_TREE_SITTER_WORKER_PATH: bunfsRoot + workerRelativePath,
       OPENCODE_WORKER_PATH: workerPath,
-      MIMOCODE_CHANNEL: `'${Script.channel}'`,
+      OPENCODE_CHANNEL: `'${Script.channel}'`,
       OPENCODE_LIBC: item.os === "linux" ? `'${item.abi ?? "glibc"}'` : "",
     },
   })
@@ -262,23 +238,11 @@ for (const item of targets) {
   }
 
   await $`rm -rf ./dist/${name}/bin/tui`
-  await Bun.file(`dist/${name}/README.md`).write(
-    `This is the ${item.os}-${item.arch} binary for [@mimo-ai/cli](https://www.npmjs.com/package/@mimo-ai/cli). Install that package directly.\n`,
-  )
   await Bun.file(`dist/${name}/package.json`).write(
     JSON.stringify(
       {
-        name: `@mimo-ai/${name}`,
+        name,
         version: Script.version,
-        description: "Platform-specific binary for @mimo-ai/cli.",
-        license: "MIT",
-        author: "Xiaomi MiMo Team",
-        homepage: "https://mimo.xiaomi.com/coder",
-        repository: {
-          type: "git",
-          url: "git+https://github.com/XiaomiMiMo/MiMo-Code.git",
-        },
-        keywords: ["ai", "coding", "agent", "cli", "mimo"],
         os: [item.os],
         cpu: [item.arch],
       },
